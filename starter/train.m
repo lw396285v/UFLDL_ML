@@ -22,7 +22,7 @@ sparsityParam = 0.01;   % desired average activation of the hidden units.
 lambda = 0.0001;     % weight decay parameter       
 beta = 3;            % weight of sparsity penalty term       
 
-checkdisable = false; % disable gredient check.
+checkdisable = true; % disable gredient check.
 
 %%======================================================================
 %% STEP 1: Implement sampleIMAGES

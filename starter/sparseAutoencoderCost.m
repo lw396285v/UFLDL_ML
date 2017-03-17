@@ -20,11 +20,11 @@ b2 = theta(2*hiddenSize*visibleSize+hiddenSize+1:end);
 
 % Cost and gradient variables (your code needs to compute these values). 
 % Here, we initialize them to zeros. 
-cost = 0;
-W1grad = zeros(size(W1)); 
-W2grad = zeros(size(W2));
-b1grad = zeros(size(b1)); 
-b2grad = zeros(size(b2));
+%cost = 0;
+%W1grad = zeros(size(W1)); 
+%W2grad = zeros(size(W2));
+%b1grad = zeros(size(b1)); 
+%b2grad = zeros(size(b2));
 
 %% ---------- YOUR CODE HERE --------------------------------------
 %  Instructions: Compute the cost/optimization objective J_sparse(W,b) for the Sparse Autoencoder,
@@ -40,41 +40,34 @@ b2grad = zeros(size(b2));
 % 
 % Stated differently, if we were using batch gradient descent to optimize the parameters,
 % the gradient descent update to W1 would be W1 := W1 - alpha * W1grad, and similarly for W2, b1, b2. 
-% 
+%
+
 [~,patchnum] = size(data);
-rho = zeros( hiddenSize,1 );
 
-for i= 1:patchnum
-    temp_patch = data(:,i);
-    z2 = W1*temp_patch+b1;
-    a2 = sigmoid(z2);
-    rho = rho + a2;
-end
+z2_cache = W1*data + b1;
+a2_cache = sigmoid(z2_cache);
+z3_cache = W2*a2_cache + b2;
+a3_cache = sigmoid(z3_cache);
 
-rho = rho./patchnum;
+rho = mean(a2_cache,2);
 
-for i= 1:patchnum
-    temp_patch = data(:,i);
-    z2 = W1*temp_patch+b1;
-    a2 = sigmoid(z2);
-    z3 = W2*a2 + b2;
-    a3 = sigmoid(z3);
-    cost = cost + sum(sum((temp_patch - a3).^2))./2;
-    sigma3 = -(temp_patch - a3).*sigmoid_diff(z3);
-    sigma2 = (W2'*sigma3 + beta.*( -sparsityParam./rho + (1 - sparsityParam)./(1 - rho ))).*sigmoid_diff(z2);
-    W2grad = W2grad + sigma3*a2';
-    W1grad = W1grad + sigma2*temp_patch';
-    b2grad = b2grad + sigma3;
-    b1grad = b1grad + sigma2;
-end
+delta3 = (a3_cache - data).* sigmoid_diff(z3_cache);
+delta2 =                                                          ...
+ (                                                                ...
+   W2'*delta3 +                                                   ... 
+   beta.*( -sparsityParam./rho + (1 - sparsityParam)./(1 - rho )) ...
+ )                                                                ...
+ .*sigmoid_diff(z2_cache);
 
-cost = cost./patchnum + lambda.*(sum(sum(W1)) + sum(sum(W2)))./2 ...
+W2grad = delta3*a2_cache'./patchnum + lambda.*W2;
+W1grad = delta2*data'./patchnum + lambda.*W1;
+b2grad = mean(delta3,2);
+b1grad = mean(delta2,2);
+
+cost = ...
+    sum(sum((data - a3_cache).^2))./2./patchnum + ...
+    lambda.*(sum(sum(W1.^2)) + sum(sum(W2.^2)))./2 ...
     + beta.*sum(KL(sparsityParam,rho));
-
-W1grad = W1grad./patchnum + lambda.*W1;
-W2grad = W2grad./patchnum + lambda.*W2;
-b1grad = b1grad./patchnum;
-b2grad = b2grad./patchnum;
 
 %-------------------------------------------------------------------
 % After computing the cost and gradient, we will convert the gradients back
@@ -99,5 +92,5 @@ function res = sigmoid_diff(x)
 end
 
 function res = KL(sparsityParam,rho)
-    res = sparsityParam.*log(sparsityParam./rho)+(1-rho).*log((1 - sparsityParam)./(1 - rho ));
+    res = sparsityParam.*log(sparsityParam./rho)+(1-sparsityParam).*log((1 - sparsityParam)./(1 - rho ));
 end
