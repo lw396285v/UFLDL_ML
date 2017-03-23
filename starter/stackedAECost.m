@@ -29,6 +29,7 @@ stack = params2stack(theta(hiddenSize*numClasses+1:end), netconfig);
 softmaxThetaGrad = zeros(size(softmaxTheta));
 stackgrad = cell(size(stack));
 numStack = numel(stack);
+numCases = size(data,2);
 for d = 1:numStack
     stackgrad{d}.w = zeros(size(stack{d}.w));
     stackgrad{d}.b = zeros(size(stack{d}.b));
@@ -69,14 +70,24 @@ for i = 2:numStack
     z_cache{i} = stack{2}.w * a_cache{i-1} + stack{2}.b;
     a_cache{i} = sigmoid(z_cache{i});
 end
+softmax_predict = exp(softmaxTheta'*a_cache{numStack});
+softmax_predict = softmax_predict./max(softmax_predict,1);
 
+cost = - sum(sum(log(softmax_predict).*groundTruth))./numCases;
+softmaxThetaGrad = - (groundTruth - softmax_predict)*a_cache{numStack}'./numCases;
 
+delta_cache = cell(size(stack));
+delta_cache{numStack} = - softmaxTheta'*(groundTruth - softmax_predict) ...
+        .*a_cache(numStack).*(1-a_cache{numStack});
+for i = numStack - 1 : 1
+    delta_cache{i} = stack{i + 1}.w'*delta_cache{i + 1} ...
+                    .* a_cache{numStack}.*(1 - a_cache{numStack});
 
-
-
-
-
-
+end
+for i = 1:numStack
+    stackgrad{i}.w = delta_cache{i}*a_cache{i}'./numCases;
+    stackgrad{i}.b = mean(delta_cache{i},2);
+end
 % -------------------------------------------------------------------------
 
 %% Roll gradient vector
