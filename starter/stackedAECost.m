@@ -73,7 +73,7 @@ softmax_predict = exp(M);
 softmax_predict = softmax_predict./sum(softmax_predict,1);
 
 cost = - sum(sum(log(softmax_predict).*groundTruth))./numCases;
-softmaxThetaGrad = - (groundTruth - softmax_predict)*a_cache{numStack}'./numCases +  + lambda.*softmaxTheta;
+softmaxThetaGrad = - (groundTruth - softmax_predict)*a_cache{numStack}'./numCases + lambda.*softmaxTheta;
 
 delta_cache = cell(size(stack));
 delta_cache{numStack} = - softmaxTheta'*(groundTruth - softmax_predict) ...
