@@ -62,31 +62,33 @@ groundTruth = full(sparse(labels, 1:M, 1));
 %                Note that the size of the matrices in stackgrad should
 %                match exactly that of the size of the matrices in stack.
 %
-z_cache = cell(size(stack));
 a_cache = cell(size(stack));
-z_cache{1} = stack{1}.w * data + stack{1}.b;
-a_cache{1} = sigmoid(z_cache);
+a_cache{1} = sigmoid(stack{1}.w * data + stack{1}.b);
 for i = 2:numStack
-    z_cache{i} = stack{2}.w * a_cache{i-1} + stack{2}.b;
-    a_cache{i} = sigmoid(z_cache{i});
+    a_cache{i} = sigmoid(stack{i}.w * a_cache{i-1} + stack{i}.b);
 end
-softmax_predict = exp(softmaxTheta'*a_cache{numStack});
-softmax_predict = softmax_predict./max(softmax_predict,1);
+M = softmaxTheta*a_cache{numStack};
+M = bsxfun(@minus, M, max(M, [], 1));
+softmax_predict = exp(M);
+softmax_predict = softmax_predict./sum(softmax_predict,1);
 
 cost = - sum(sum(log(softmax_predict).*groundTruth))./numCases;
-softmaxThetaGrad = - (groundTruth - softmax_predict)*a_cache{numStack}'./numCases;
+softmaxThetaGrad = - (groundTruth - softmax_predict)*a_cache{numStack}'./numCases +  + lambda.*softmaxTheta;
 
 delta_cache = cell(size(stack));
 delta_cache{numStack} = - softmaxTheta'*(groundTruth - softmax_predict) ...
-        .*a_cache(numStack).*(1-a_cache{numStack});
+        .*a_cache{numStack}.*(1-a_cache{numStack});
 for i = numStack - 1 : 1
     delta_cache{i} = stack{i + 1}.w'*delta_cache{i + 1} ...
-                    .* a_cache{numStack}.*(1 - a_cache{numStack});
+                    .* a_cache{i}.*(1 - a_cache{i});
 
 end
-for i = 1:numStack
-    stackgrad{i}.w = delta_cache{i}*a_cache{i}'./numCases;
-    stackgrad{i}.b = mean(delta_cache{i},2);
+
+stackgrad{1}.w = delta_cache{1}*data'./numCases;
+stackgrad{1}.b = mean(delta_cache{1},2) ;
+for i = 2:numStack
+    stackgrad{i}.w = delta_cache{i}*a_cache{i-1}'./numCases;
+    stackgrad{i}.b = mean(delta_cache{i},2) ;
 end
 % -------------------------------------------------------------------------
 

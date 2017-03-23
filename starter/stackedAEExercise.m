@@ -128,8 +128,8 @@ saeSoftmaxTheta = 0.005 * randn(hiddenSizeL2 * numClasses, 1);
 %  NOTE: If you used softmaxTrain to complete this part of the exercise,
 %        set saeSoftmaxOptTheta = softmaxModel.optTheta(:);
 options = struct;
-[softmaxModel] = softmaxTrain__(hiddenSizeL2, numClasses, lambda, sae2Features, trainLabels, options);
-
+[softmaxModel] = softmaxTrain(hiddenSizeL2, numClasses, lambda, sae2Features, trainLabels, options);
+saeSoftmaxOptTheta = softmaxModel.optTheta(:);
 % -------------------------------------------------------------------------
 
 
@@ -159,20 +159,11 @@ stackedAETheta = [ saeSoftmaxOptTheta ; stackparams ];
 %                to "hiddenSizeL2".
 %
 %
-[optParam,~] =  minFunc( @(p) stackedAECost(p, ...
-                                            inputSize, hiddenSize, ...
+[stackedAEOptTheta,~] =  minFunc( @(p) stackedAECost(p, ...
+                                            inputSize, hiddenSizeL2, ...
                                             numClasses, netconfig, ...
-                                            lambda, data, labels), ...
+                                            lambda, trainData, trainLabels), ...
                                             stackedAETheta, options);
-
-
-
-
-
-
-
-
-
 
 
 % -------------------------------------------------------------------------
@@ -187,8 +178,8 @@ stackedAETheta = [ saeSoftmaxOptTheta ; stackparams ];
 
 % Get labelled test images
 % Note that we apply the same kind of preprocessing as the training set
-testData = loadMNISTImages('mnist/t10k-images-idx3-ubyte');
-testLabels = loadMNISTLabels('mnist/t10k-labels-idx1-ubyte');
+testData = loadMNISTImages('t10k-images.idx3-ubyte');
+testLabels = loadMNISTLabels('t10k-labels.idx1-ubyte');
 
 testLabels(testLabels == 0) = 10; % Remap 0 to 10
 
@@ -215,10 +206,3 @@ fprintf('After Finetuning Test Accuracy: %0.3f%%\n', acc * 100);
 % entire data set of 60000 28x28 training images 
 % (unless you modified the loading code, this should be the case)
 
-function sigm = sigmoid(x)  
-    sigm = 1 ./ (1 + exp(-x));
-end
-
-function res = sigmoid_diff(x)
-    res = sigmoid(x).*(1.-sigmoid(x));
-end

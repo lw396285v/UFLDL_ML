@@ -24,16 +24,30 @@ stack = params2stack(theta(hiddenSize*numClasses+1:end), netconfig);
 %  Instructions: Compute pred using theta assuming that the labels start 
 %                from 1.
 
-
-
-
-
-
-
-
-
-
-
+numStack = numel(stack);
+numCases = size(data,2);
+z_cache = cell(size(stack));
+a_cache = cell(size(stack));
+z_cache{1} = stack{1}.w * data + stack{1}.b;
+a_cache{1} = sigmoid(z_cache{1});
+for i = 2:numStack
+    z_cache{i} = stack{i}.w * a_cache{i-1} + stack{i}.b;
+    a_cache{i} = sigmoid(z_cache{i});
+end
+M = softmaxTheta*a_cache{numStack};
+M = bsxfun(@minus, M, max(M, [], 1));
+softmax_predict = exp(M);
+softmax_predict = softmax_predict./sum(softmax_predict,1);
+max_pred = max(softmax_predict,[],1);
+pred = zeros(1,numCases);
+for i =1:numCases
+    for j = 1:numClasses
+        if softmax_predict(j,i) == max_pred(i)
+           pred(i) = j; 
+           break;
+        end
+    end
+end
 % -----------------------------------------------------------
 
 end
